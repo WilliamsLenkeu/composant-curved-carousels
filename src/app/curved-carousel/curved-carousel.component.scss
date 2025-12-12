@@ -362,3 +362,212 @@ canvas {
     }
   }
 }
+
+// ============================================
+// RESPONSIVE DESIGN
+// ============================================
+
+// Tablette (768px - 1024px)
+@media screen and (max-width: 1024px) {
+  .slide-indicators {
+    height: 100px;
+
+    &::before {
+      width: 250px;
+      height: 25px;
+    }
+  }
+
+  .slide-indicator {
+    width: 42px;
+    height: 42px;
+    font-size: 1rem;
+
+    &.active {
+      transform: translateX(-50%) scale(1.2);
+    }
+  }
+
+  .controls {
+    padding: 0 4vw;
+
+    button {
+      width: 55px;
+      height: 55px;
+      font-size: 22px;
+    }
+  }
+
+  .bottom-arc-content {
+    height: 180px;
+
+    &::before {
+      width: 250px;
+      height: 25px;
+    }
+
+    .temporary-text {
+      font-size: 12px;
+    }
+  }
+}
+
+// Mobile (< 768px)
+@media screen and (max-width: 768px) {
+  .slide-indicators {
+    height: 80px;
+    padding-top: 10px;
+
+    &::before {
+      width: 200px;
+      height: 20px;
+      top: -10px;
+    }
+  }
+
+  .slide-indicator {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+    border-width: 2px;
+
+    &.active {
+      transform: translateX(-50%) scale(1.15);
+    }
+
+    &.nearby {
+      transform: scale(0.85);
+    }
+  }
+
+  .controls {
+    padding: 0 3vw;
+
+    button {
+      width: 50px;
+      height: 50px;
+      font-size: 20px;
+      border-width: 2px;
+    }
+  }
+
+  .bottom-arc-content {
+    height: 150px;
+
+    &::before {
+      width: 200px;
+      height: 20px;
+      bottom: -10px;
+    }
+
+    .temporary-text {
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+  }
+}
+
+// Petit mobile (< 480px)
+@media screen and (max-width: 480px) {
+  .slide-indicators {
+    height: 70px;
+    padding-top: 8px;
+
+    &::before {
+      width: 180px;
+      height: 18px;
+    }
+  }
+
+  .slide-indicator {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+    border-width: 2px;
+
+    &.active {
+      transform: translateX(-50%) scale(1.1);
+    }
+  }
+
+  .controls {
+    padding: 0 2vw;
+
+    button {
+      width: 45px;
+      height: 45px;
+      font-size: 18px;
+    }
+  }
+
+  .bottom-arc-content {
+    height: 120px;
+
+    &::before {
+      width: 180px;
+      height: 18px;
+    }
+
+    .temporary-text {
+      font-size: 10px;
+      padding: 0 10px;
+      text-align: center;
+    }
+  }
+}
+
+// Orientation paysage sur mobile
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .slide-indicators {
+    height: 60px;
+  }
+
+  .bottom-arc-content {
+    height: 100px;
+  }
+}
+
+// Très grands écrans (> 1920px)
+@media screen and (min-width: 1920px) {
+  .slide-indicators {
+    height: 140px;
+
+    &::before {
+      width: 350px;
+      height: 35px;
+    }
+  }
+
+  .slide-indicator {
+    width: 54px;
+    height: 54px;
+    font-size: 1.2rem;
+
+    &.active {
+      transform: translateX(-50%) scale(1.35);
+    }
+  }
+
+  .controls {
+    padding: 0 6vw;
+
+    button {
+      width: 70px;
+      height: 70px;
+      font-size: 28px;
+    }
+  }
+
+  .bottom-arc-content {
+    height: 220px;
+
+    &::before {
+      width: 350px;
+      height: 35px;
+    }
+
+    .temporary-text {
+      font-size: 16px;
+    }
+  }
+}
