@@ -1,0 +1,364 @@
+.three-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Laisser passer les clics vers le canvas si besoin (ici on a des boutons pointer-events: auto) */
+  
+  /* Masque global pour l'effet d'écran incurvé physique (optionnel, si on veut ajouter une couche de "cadre") */
+  /* clip-path: ellipse(150% 100% at 50% 50%); */
+}
+
+.slide-indicators {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 120px; /* Hauteur suffisante pour contenir les indicateurs */
+  pointer-events: none;
+  z-index: 100;
+
+  // Arc décoratif au-dessus des indicateurs
+  &::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 30px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+    border-radius: 50%;
+    clip-path: ellipse(50% 100% at 50% 0%);
+    backdrop-filter: blur(5px);
+    z-index: -1;
+  }
+}
+
+.slide-indicator {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition:
+    left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  opacity: 0.7;
+  transform: scale(0.9);
+  will-change: left, top, transform, opacity;
+
+  &.nearby {
+    opacity: 0.7;
+    transform: scale(0.9);
+    pointer-events: auto;
+  }
+
+  &.active {
+    transform: translateX(-50%) scale(1.3);
+    opacity: 1;
+    border-color: var(--slide-color, white);
+    background: var(--slide-color, white);
+    color: #000;
+    box-shadow:
+      0 0 40px var(--slide-color),
+      0 0 80px var(--slide-color, rgba(255, 255, 255, 0.5)),
+      inset 0 0 20px rgba(255, 255, 255, 0.3);
+    animation: indicatorActivate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  &.animating {
+    animation: indicatorSlideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  .indicator-number {
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+  }
+
+  .indicator-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    background: radial-gradient(
+      circle,
+      transparent 30%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 70%
+    );
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    transform: scale(1.2);
+    box-shadow:
+      0 0 30px rgba(255, 255, 255, 0.3),
+      0 0 60px rgba(255, 255, 255, 0.1),
+      inset 0 0 30px rgba(255, 255, 255, 0.2);
+
+    .indicator-glow {
+      opacity: 1;
+    }
+  }
+
+  &.active {
+    border-color: var(--slide-color, white);
+    background: var(--slide-color, white);
+    color: #000;
+    transform: scale(1.3);
+    box-shadow:
+      0 0 40px var(--slide-color),
+      0 0 80px var(--slide-color, rgba(255, 255, 255, 0.5)),
+      inset 0 0 20px rgba(255, 255, 255, 0.3);
+
+    .indicator-glow {
+      opacity: 1;
+      background: radial-gradient(
+        circle,
+        transparent 20%,
+        var(--slide-color, rgba(255, 255, 255, 0.3)) 40%,
+        transparent 60%
+      );
+    }
+
+    .indicator-number {
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  // Pulse animation for active indicator
+  &.active::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    border: 2px solid var(--slide-color, white);
+    border-radius: 12px;
+    animation: pulse 2s infinite;
+    opacity: 0.6;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+}
+
+@keyframes indicatorSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.7) translateY(10px);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.1) translateY(-2px);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translateX(-50%) scale(0.9) translateY(0px);
+  }
+}
+
+@keyframes indicatorSlideOut {
+  0% {
+    opacity: 0.7;
+    transform: translateX(-50%) scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.6);
+  }
+}
+
+@keyframes indicatorActivate {
+  0% {
+    transform: translateX(-50%) scale(0.9);
+    box-shadow:
+      0 0 20px rgba(0, 0, 0, 0.5),
+      inset 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.4);
+    box-shadow:
+      0 0 50px var(--slide-color),
+      0 0 100px var(--slide-color),
+      inset 0 0 30px rgba(255, 255, 255, 0.4);
+  }
+  100% {
+    transform: translateX(-50%) scale(1.3);
+    box-shadow:
+      0 0 40px var(--slide-color),
+      0 0 80px var(--slide-color),
+      inset 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.bottom-arc-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 200px; /* Hauteur de la zone réservée - à ajuster selon les besoins */
+  pointer-events: auto;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 30, 0.85);
+  backdrop-filter: blur(10px);
+  
+  // Arc décoratif en bas pour correspondre à l'arc du haut
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 30px;
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+    border-radius: 50%;
+    clip-path: ellipse(50% 100% at 50% 100%);
+    backdrop-filter: blur(5px);
+    z-index: -1;
+  }
+
+  // Masque pour créer l'effet d'arc courbé vers le haut
+  clip-path: ellipse(80% 100% at 50% 100%);
+
+  .temporary-text {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0;
+    padding: 0;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover .temporary-text {
+    opacity: 1;
+  }
+}
+
+.controls {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 5vw;
+  z-index: 100;
+  pointer-events: auto;
+
+  button {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 0 20px rgba(0, 0, 0, 0.5),
+      inset 0 0 20px rgba(255, 255, 255, 0.1);
+
+    &:first-child {
+      // Bouton précédent (flèche gauche)
+      &::before {
+        content: '←';
+      }
+    }
+
+    &:last-child {
+      // Bouton suivant (flèche droite)
+      &::before {
+        content: '→';
+      }
+    }
+
+    &:hover {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.8);
+      color: white;
+      transform: scale(1.1);
+      box-shadow:
+        0 0 30px rgba(255,255,255,0.3),
+        0 0 60px rgba(255,255,255,0.1),
+        inset 0 0 30px rgba(255, 255, 255, 0.2);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+}

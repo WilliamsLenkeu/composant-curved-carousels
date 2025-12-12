@@ -1,0 +1,34 @@
+<div class="three-container">
+  <canvas #rendererCanvas></canvas>
+  
+  <!-- Overlay UI -->
+  <div class="ui-overlay">
+    <div class="slide-indicators">
+      @for (indicator of slideIndicators; track indicator.slideId) {
+        @if (getIndicatorVisibility(indicator.slideId)) {
+          <button
+            class="slide-indicator"
+            [class.active]="activeSlide() === indicator.slideId"
+            [class.nearby]="getIndicatorDistance(indicator.slideId) === 1"
+            [class.animating]="true"
+            (click)="selectSlide(indicator.slideId)"
+            [style]="getIndicatorPosition(indicator.slideId)"
+            [style.--slide-color]="slides[indicator.slideId].color">
+            <span class="indicator-number">{{ indicator.slideId + 1 }}</span>
+            <div class="indicator-glow"></div>
+          </button>
+        }
+      }
+    </div>
+
+    <div class="controls">
+      <button (click)="previousSlide()" aria-label="Slide précédent"></button>
+      <button (click)="nextSlide()" aria-label="Slide suivant"></button>
+    </div>
+
+    <!-- Zone réservée pour l'espace noir en bas de l'arc -->
+    <div class="bottom-arc-content">
+      <p class="temporary-text">Zone de contenu - À remplir</p>
+    </div>
+  </div>
+</div>
