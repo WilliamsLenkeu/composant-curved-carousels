@@ -7,6 +7,12 @@ interface Slide {
   id: number;
   color: string;
   title: string;
+  // Images pour les zones (optionnel)
+  primaryImage?: string;    // Zone principale (slides 1-3)
+  secondaryImage?: string;  // Zone secondaire (slides 1-3)
+  zone1Image?: string;      // Zone 1 (slide 4)
+  zone2Image?: string;      // Zone 2 (slide 4)
+  zone3Image?: string;      // Zone 3 (slide 4)
 }
 
 @Component({
@@ -21,10 +27,10 @@ export class CurvedCarouselComponent implements AfterViewInit, OnDestroy {
 
   activeSlide = signal(0);
   slides: Slide[] = [
-    { id: 0, color: '#FF3366', title: 'Slide 1' },
-    { id: 1, color: '#33CCFF', title: 'Slide 2' },
-    { id: 2, color: '#66FF33', title: 'Slide 3' },
-    { id: 3, color: '#FF9933', title: 'Slide 4' }
+    { id: 0, color: '#FF3366', title: 'Persona 1',primaryImage:'/images/back1.jpg',secondaryImage:'/images/back3.jpg' },
+    { id: 1, color: '#33CCFF', title: 'Persona 2',primaryImage:'/images/back1.jpg',secondaryImage:'/images/zone2.jpeg' },
+    { id: 2, color: '#66FF33', title: 'Persona 3',primaryImage:'/images/back3.jpg',secondaryImage:'/images/back1.jpg' },
+    { id: 3, color: '#FF9933', title: 'Persona 4',zone1Image:'/images/back3.jpg',zone2Image:'/images/zone2.jpeg',zone3Image: '/images/zone2.jpeg' }
   ];
 
   slideIndicators = this.slides.map((slide, index) => ({ slideId: index }));
@@ -118,6 +124,14 @@ export class CurvedCarouselComponent implements AfterViewInit, OnDestroy {
     this.slides.forEach((slide, index) => {
       const texture = this.createSlideTexture(slide, index);
       
+      // Lier la texture au canvas pour permettre les mises à jour
+      const canvas = (texture as any).canvasRef as HTMLCanvasElement;
+      if (canvas) {
+        (canvas as any).textureRef = texture;
+        // Charger les images de manière asynchrone
+        this.loadImagesIntoTexture(canvas, slide, index);
+      }
+      
       // Geometry
       const geometry = new THREE.CylinderGeometry(
         radius, radius, height, 
@@ -174,7 +188,66 @@ export class CurvedCarouselComponent implements AfterViewInit, OnDestroy {
     return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
   }
 
+  /**
+   * Charge une image et la dessine dans le canvas
+   */
+  private async loadAndDrawImage(
+    ctx: CanvasRenderingContext2D,
+    imagePath: string | undefined,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fallbackColor: string
+  ): Promise<void> {
+    if (!imagePath) {
+      // Si pas d'image, garder la couleur de fond
+      return;
+    }
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          // Dessiner l'image en couvrant toute la zone (cover style)
+          // Calculer les dimensions pour remplir la zone tout en gardant les proportions
+          const imgAspect = img.width / img.height;
+          const targetAspect = width / height;
+          
+          let drawWidth = width;
+          let drawHeight = height;
+          let drawX = x;
+          let drawY = y;
+
+          if (imgAspect > targetAspect) {
+            // L'image est plus large que la zone, ajuster la hauteur
+            drawHeight = width / imgAspect;
+            drawY = y + (height - drawHeight) / 2;
+          } else {
+            // L'image est plus haute que la zone, ajuster la largeur
+            drawWidth = height * imgAspect;
+            drawX = x + (width - drawWidth) / 2;
+          }
+
+          ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+        } catch (error) {
+          console.warn(`Erreur lors du dessin de l'image: ${imagePath}`, error);
+        }
+        resolve();
+      };
+      img.onerror = () => {
+        // En cas d'erreur, garder la couleur de fond
+        console.warn(`Impossible de charger l'image: ${imagePath}`);
+        resolve();
+      };
+      img.src = imagePath;
+    });
+  }
+
   private createSlideTexture(slide: Slide, index: number): THREE.CanvasTexture {
+    // Pour une version synchrone, on crée la texture de base
+    // Les images seront chargées de manière asynchrone et la texture sera mise à jour
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
@@ -184,23 +257,90 @@ export class CurvedCarouselComponent implements AfterViewInit, OnDestroy {
     const isFirstThreeSlides = index < 3;
 
     if (isLastSlide) {
-      // Slide 4 : diviser en 3 colonnes verticales égales (prêtes pour contenu)
       const sectionWidth = canvas.width / 3;
-      const colors = ['#FF3366', '#33CCFF', '#66FF33']; // Couleurs temporaires
-
-      // Colonne 1 (gauche) - Zone de contenu
+      const colors = ['#FF3366', '#33CCFF', '#66FF33'];
+      
       ctx.fillStyle = colors[0];
       ctx.fillRect(0, 0, sectionWidth, canvas.height);
-      
-      // Colonne 2 (milieu) - Zone de contenu
       ctx.fillStyle = colors[1];
       ctx.fillRect(sectionWidth, 0, sectionWidth, canvas.height);
-
-      // Colonne 3 (droite) - Zone de contenu
       ctx.fillStyle = colors[2];
       ctx.fillRect(sectionWidth * 2, 0, sectionWidth, canvas.height);
 
-      // Bordures entre les colonnes
+      // Charger les images de manière asynchrone
+      this.loadImagesIntoTexture(canvas, slide, index);
+    } else if (isFirstThreeSlides) {
+      const columnWidth = canvas.width * 0.5;
+      
+      ctx.fillStyle = slide.color;
+      ctx.fillRect(0, 0, columnWidth, canvas.height);
+      const rightColumnColor = this.darkenColor(slide.color, 0.2);
+      ctx.fillStyle = rightColumnColor;
+      ctx.fillRect(columnWidth, 0, columnWidth, canvas.height);
+
+      // Charger les images de manière asynchrone
+      this.loadImagesIntoTexture(canvas, slide, index);
+    } else {
+      ctx.fillStyle = slide.color;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Bordures (communes pour les deux cas)
+    if (isLastSlide || isFirstThreeSlides) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 10;
+      
+      if (isLastSlide) {
+        const sectionWidth = canvas.width / 3;
+        ctx.beginPath();
+        ctx.moveTo(sectionWidth, 0);
+        ctx.lineTo(sectionWidth, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sectionWidth * 2, 0);
+        ctx.lineTo(sectionWidth * 2, canvas.height);
+        ctx.stroke();
+      } else {
+        const columnWidth = canvas.width * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(columnWidth, 0);
+        ctx.lineTo(columnWidth, canvas.height);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 20;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    
+    // Stocker la référence pour mettre à jour après le chargement des images
+    (texture as any).canvasRef = canvas;
+    
+    return texture;
+  }
+
+  /**
+   * Charge les images de manière asynchrone et les dessine dans le canvas
+   */
+  private async loadImagesIntoTexture(canvas: HTMLCanvasElement, slide: Slide, index: number): Promise<void> {
+    const ctx = canvas.getContext('2d')!;
+    const isLastSlide = index === this.slides.length - 1;
+    const isFirstThreeSlides = index < 3;
+
+    if (isLastSlide) {
+      const sectionWidth = canvas.width / 3;
+      
+      // Charger les 3 images en parallèle
+      await Promise.all([
+        this.loadAndDrawImage(ctx, slide.zone1Image, 0, 0, sectionWidth, canvas.height, '#FF3366'),
+        this.loadAndDrawImage(ctx, slide.zone2Image, sectionWidth, 0, sectionWidth, canvas.height, '#33CCFF'),
+        this.loadAndDrawImage(ctx, slide.zone3Image, sectionWidth * 2, 0, sectionWidth, canvas.height, '#66FF33')
+      ]);
+
+      // Redessiner les bordures par-dessus les images
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 10;
       ctx.beginPath();
@@ -211,66 +351,29 @@ export class CurvedCarouselComponent implements AfterViewInit, OnDestroy {
       ctx.moveTo(sectionWidth * 2, 0);
       ctx.lineTo(sectionWidth * 2, canvas.height);
       ctx.stroke();
-
-      // Labels temporaires pour indiquer les zones de contenu
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.font = 'bold 40px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Zone 1', sectionWidth / 2, canvas.height / 2);
-      ctx.fillText('Zone 2', sectionWidth + sectionWidth / 2, canvas.height / 2);
-      ctx.fillText('Zone 3', sectionWidth * 2 + sectionWidth / 2, canvas.height / 2);
-
-      // Bordure extérieure
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 20;
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
     } else if (isFirstThreeSlides) {
-      // Slides 1, 2, 3 : diviser en 2 colonnes (60% et 40%)
-      const leftColumnWidth = canvas.width * 0.6;
-      const rightColumnWidth = canvas.width * 0.4;
+      const columnWidth = canvas.width * 0.5;
       
-      // Colonne gauche (60%) - Zone de contenu principale
-      ctx.fillStyle = slide.color;
-      ctx.fillRect(0, 0, leftColumnWidth, canvas.height);
-      
-      // Colonne droite (40%) - Zone de contenu secondaire
-      const rightColumnColor = this.darkenColor(slide.color, 0.2);
-      ctx.fillStyle = rightColumnColor;
-      ctx.fillRect(leftColumnWidth, 0, rightColumnWidth, canvas.height);
+      // Charger les 2 images en parallèle
+      await Promise.all([
+        this.loadAndDrawImage(ctx, slide.primaryImage, 0, 0, columnWidth, canvas.height, slide.color),
+        this.loadAndDrawImage(ctx, slide.secondaryImage, columnWidth, 0, columnWidth, canvas.height, this.darkenColor(slide.color, 0.2))
+      ]);
 
-      // Bordure entre les colonnes
+      // Redessiner la bordure par-dessus les images
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 10;
       ctx.beginPath();
-      ctx.moveTo(leftColumnWidth, 0);
-      ctx.lineTo(leftColumnWidth, canvas.height);
+      ctx.moveTo(columnWidth, 0);
+      ctx.lineTo(columnWidth, canvas.height);
       ctx.stroke();
-
-      // Labels temporaires pour indiquer les zones de contenu
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.font = 'bold 50px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Zone Principale', leftColumnWidth / 2, canvas.height / 2);
-      ctx.fillText('Zone Secondaire', leftColumnWidth + rightColumnWidth / 2, canvas.height / 2);
-
-      // Bordure extérieure
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 20;
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
-    } else {
-      // Fallback pour autres slides (ne devrait pas arriver avec 4 slides)
-      ctx.fillStyle = slide.color;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 20;
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
+    // Mettre à jour la texture Three.js
+    const texture = (canvas as any).textureRef as THREE.CanvasTexture;
+    if (texture) {
+      texture.needsUpdate = true;
+    }
   }
 
   private animate(): void {
