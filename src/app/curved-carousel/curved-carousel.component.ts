@@ -210,27 +210,9 @@ export class CurvedCarouselComponent implements AfterViewInit, OnDestroy {
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
-          // Dessiner l'image en couvrant toute la zone (cover style)
-          // Calculer les dimensions pour remplir la zone tout en gardant les proportions
-          const imgAspect = img.width / img.height;
-          const targetAspect = width / height;
-          
-          let drawWidth = width;
-          let drawHeight = height;
-          let drawX = x;
-          let drawY = y;
-
-          if (imgAspect > targetAspect) {
-            // L'image est plus large que la zone, ajuster la hauteur
-            drawHeight = width / imgAspect;
-            drawY = y + (height - drawHeight) / 2;
-          } else {
-            // L'image est plus haute que la zone, ajuster la largeur
-            drawWidth = height * imgAspect;
-            drawX = x + (width - drawWidth) / 2;
-          }
-
-          ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+          // Dessiner l'image en remplissant complètement la zone (fill style)
+          // L'image est étirée pour occuper tout l'espace disponible
+          ctx.drawImage(img, x, y, width, height);
         } catch (error) {
           console.warn(`Erreur lors du dessin de l'image: ${imagePath}`, error);
         }
